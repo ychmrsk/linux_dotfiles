@@ -1,0 +1,36 @@
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import pickle
+import numpy as np
+from collections import OrderedDict
+from util.layers import *
+from util.neural_network import BaseNetwork
+
+class SampleNetwork(BaseNetwork):
+    
+    def __init__(self, input_dim=(1, 28, 28),
+                 conv_param={'filter':30, 'filter_size':5, 'pad':0, 'stride':1},
+                 hidden_size=100, output_size=10, activation='relu',
+                 weight_init_std='relu', weight_decay_lambda=0,
+                 use_dropout=False, dropout_ratio=0.5,  use_batchnorm=False):
+        BaseNetwork.__init__(self, input_dim[1], [hidden_size], output_size,
+                             weight_init_std, weight_decay_lambda,
+                             use_dropout, dropout_ratio, use_batchnorm)
+
+        input_ch, input_size, _ = input_dim
+        filter_num, filter_size = conv_param['filter_num'], conv_param['filter_size']
+        pad, stride = conv_param['pad'], conv_param['stride']
+        conv_output_size = (input_size - filter_size + 2 * pad) / stride + 1
+        pool_output_size = int(filter_num * (conv_output_size / 2) * (conv_output_size / 2))
+
+        # convolution - activation - pooling
+        BaseNetwork._generate_convolution_layer(self, 1, input_ch, input_size, conv_param, weight_init_std)
+        BaseNetwork._generate_activation_layer(self, 1, activation)
+        BaseNetwork._generate_pooling_layer(self, 1, pool_h=2, pool_w=2, stride=2)
+        # hidden layer
+        BaseNetwork._generate_affine_layer(self, 2, pool_output_size, hidden_size, weight_init_std)
+        BaseNetwork._generate_activation_layer(self, 2, activation)
+        # output layer
+        BaseNetwork._generate_affine_layer(self, 3, hidden_size, output_size, weight_init_std)
+        
